@@ -1,6 +1,9 @@
-from django.shortcuts import render, HttpResponse
+from django.db.models import query
+from django.shortcuts import render, HttpResponse, redirect
 from home.models import Contact
 from django.contrib import messages
+from blog.models import Post
+from django.contrib.auth.models import User
 
 
 def home(request): 
@@ -27,3 +30,54 @@ def contact(request):
 
     def __str__(self):
         return 'Message from' + self.name
+
+def search(request):
+    query=request.GET['query']
+    if len(query)>78:
+        allPosts=Post.objects.none()
+    else:
+        allPostsTitle= Post.objects.filter(title__icontains=query)
+        allPostsAuthor= Post.objects.filter(author__icontains=query)
+        allPostsContent =Post.objects.filter(content__icontains=query)
+        allPosts=  allPostsTitle.union(allPostsContent, allPostsAuthor)
+    if allPosts.count()==0:
+        messages.warning(request, "No search results found. Please refine your query.")
+    params={'allPosts': allPosts, 'query': query}
+    return render(request, 'home/search.html', params)
+
+def handlesignup(request):
+    if request.method == 'POST':
+        # Get the Post parameters
+        username = request.POST['username']
+        fname = request.POST['fname']
+        lname = request.POST['lname']
+        email = request.POST['email']
+        pass1 = request.POST['pass1']
+        pass2 = request.POST['pass2']
+
+        #Check for errorneous input
+        if len(username) > 10:
+            messages.success(request,"Your Username must be under 10 characters")
+            return redirect('/')
+        
+        if not username.isalnum():
+            messages.success(request,"Your Username should only contain letter and numbers ")
+            return redirect('/')
+            
+        if pass1 != pass2:
+            messages.success(request,"Password do not match")
+            return redirect('/')
+
+
+
+
+        #create the user
+        myuser = User.objects.create_user(username, email, pass1)
+        myuser.first_name = fname
+        myuser.last_name = lname
+        myuser.save()
+        messages.success(request,"Your iCoder account has been successfully created")
+        return redirect('/')
+
+    else:
+        return HttpResponse("404 - Not Found")
