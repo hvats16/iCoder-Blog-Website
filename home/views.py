@@ -4,6 +4,7 @@ from home.models import Contact
 from django.contrib import messages
 from blog.models import Post
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate,login,logout
 
 
 def home(request): 
@@ -45,6 +46,7 @@ def search(request):
     params={'allPosts': allPosts, 'query': query}
     return render(request, 'home/search.html', params)
 
+ 
 def handlesignup(request):
     if request.method == 'POST':
         # Get the Post parameters
@@ -81,3 +83,25 @@ def handlesignup(request):
 
     else:
         return HttpResponse("404 - Not Found")
+
+
+def handleLogin(request):
+    if request.method == 'POST':
+        # Get the Post parameters
+        loginusername = request.POST['loginusername']
+        loginpassword = request.POST['loginpassword']
+        user = authenticate(username=loginusername, password=loginpassword)
+
+        if user is not None:
+            login(request,user)
+            messages.success(request, "Succesfully Loged In")
+            return redirect("/")
+        else:
+            messages.error(request,"Invalid Credentials")
+            return redirect('/')
+    return HttpResponse("404 - Not Found")
+    
+def handleLogout(request):
+        logout(request)
+        messages.success(request, "Succesfully Logout")
+        return redirect('/')
